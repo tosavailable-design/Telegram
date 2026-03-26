@@ -18,7 +18,7 @@ jobs:
         with:
           java-version: '17'
           distribution: 'zulu'
-          # ВРУБАЕМ КЭШ, ЧТОБЫ НЕ ЖДАТЬ ПОЛГОДА СЛЕДУЮЩИЙ РАЗ
+          # Кэш всё еще включен, вторая сборка будет быстрее
           cache: 'gradle'
 
       - name: Setup Dummy Files & Speedup Gradle
@@ -59,8 +59,8 @@ jobs:
       - name: Build APK (Arm64 Debug)
         run: |
           chmod +x gradlew
-          # СОБИРАЕМ ТОЛЬКО ПОД ARM64, А НЕ ПОД ВСЁ ПОДРЯД
-          ./gradlew assembleAarm64Debug --stacktrace
+          # ИСПРАВЛЕННАЯ ТАСКА, БЕЗ ЛИШНЕЙ БУКВЫ "A"
+          ./gradlew assembleArm64Debug --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
