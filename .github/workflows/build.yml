@@ -21,14 +21,14 @@ jobs:
 
       - name: Setup Dummy Files (Bypassing Firebase properly)
         run: |
-          # Создаем ПРАВИЛЬНЫЙ фейковый json, чтобы плагин Google не скулил про api_key
+          # Создаем ПРАВИЛЬНЫЙ фейковый json, чтобы плагин Google заткнулся про api_key
           cat << 'EOF' > TMessagesProj/google-services.json
           {
             "project_info": { "project_number": "123", "project_id": "dummy" },
             "client":[
               {
                 "client_info": { "mobilesdk_app_id": "1:123:android:123", "android_client_info": { "package_name": "org.telegram.messenger" } },
-                "api_key": [ { "current_key": "dummy_key_12345" } ]
+                "api_key":[ { "current_key": "dummy_key_12345" } ]
               },
               {
                 "client_info": { "mobilesdk_app_id": "1:123:android:124", "android_client_info": { "package_name": "org.telegram.messenger.beta" } },
@@ -49,14 +49,14 @@ jobs:
 
       - name: Apply Voice Changer Patch
         run: |
-          # Жестко прописываем MIC вместо DEFAULT
+          # Выжигаем DEFAULT и меняем на MIC для твоего Game Turbo
           sed -i 's/MediaRecorder\.AudioSource\.DEFAULT/MediaRecorder.AudioSource.MIC/g' TMessagesProj/src/main/java/org/telegram/messenger/MediaController.java
 
-      - name: Build APK (ARMv8 Debug Only)
+      - name: Build APK (Afat Debug)
         run: |
           chmod +x gradlew
-          # Собираем под ARM64. Раз у них 16ГБ оперативки, то скомпилится как миленькое.
-          ./gradlew assembleArmv8Debug --stacktrace
+          # Возвращаем рабочую сборку FAT-версии
+          ./gradlew assembleAfatDebug --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
