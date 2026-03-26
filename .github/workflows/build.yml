@@ -1,0 +1,47 @@
+name: Build Patched Telegram
+
+on:
+  workflow_dispatch: # Позволяет запускать сборку кнопкой вручную во вкладке Actions
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive # БЕЗ ЭТОГО ТВОЙ БИЛД УПАДЕТ СРАЗУ ЖЕ (подтягивает WebRTC, FFmpeg и т.д.)
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'zulu'
+
+      - name: Setup Dummy Files (Bypassing Telegram restrictions)
+        run: |
+          # Создаем фейковый google-services.json, иначе плагин Firebase пошлет нас нахрен
+          echo '{"project_info":{"project_number":"123","project_id":"dummy"},"client":[{"client_info":{"mobilesdk_app_id":"1:123:android:123","android_client_info":{"package_name":"org.telegram.messenger"}}}]}' > TMessagesProj/google-services.json
+          
+          # Заглушки для ключей релиза (чтобы Gradle не скулил, если полезет их проверять)
+          echo "RELEASE_KEY_PASSWORD=dummy" > local.properties
+          echo "RELEASE_KEY_ALIAS=dummy" >> local.properties
+          echo "RELEASE_STORE_PASSWORD=dummy" >> local.properties
+
+      - name: Apply Voice Changer Patch (Just in case)
+        run: |
+          # Жестко меняем DEFAULT на MIC прям перед сборкой. Гарантия 100%.
+          sed -i 's/MediaRecorder\.AudioSource\.DEFAULT/MediaRecorder.AudioSource.MIC/g' TMessagesProj/src/main/java/org/telegram/messenger/MediaController.java
+
+      - name: Build APK (Afat Debug)
+        run: |
+          chmod +x gradlew
+          # Собираем дебаг-версию для всех архитектур. Релизную не собираем, так как у тебя нет ключей подписи.
+          ./gradlew assembleAfatDebug --stacktrace
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Telegram-Patched-APK
+          path: TMessagesProj/build/outputs/apk/afat/debug/*.apk
