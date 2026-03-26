@@ -18,10 +18,11 @@ jobs:
         with:
           java-version: '17'
           distribution: 'zulu'
+          # ВРУБАЕМ КЭШ, ЧТОБЫ НЕ ЖДАТЬ ПОЛГОДА СЛЕДУЮЩИЙ РАЗ
+          cache: 'gradle'
 
-      - name: Setup Dummy Files (Bypassing Firebase properly)
+      - name: Setup Dummy Files & Speedup Gradle
         run: |
-          # Создаем ПРАВИЛЬНЫЙ фейковый json, чтобы плагин Google заткнулся про api_key
           cat << 'EOF' > TMessagesProj/google-services.json
           {
             "project_info": { "project_number": "123", "project_id": "dummy" },
@@ -46,20 +47,23 @@ jobs:
           echo "RELEASE_KEY_PASSWORD=dummy" > local.properties
           echo "RELEASE_KEY_ALIAS=dummy" >> local.properties
           echo "RELEASE_STORE_PASSWORD=dummy" >> local.properties
+          
+          # УСКОРЯЕМ GRADLE ПАРАЛЛЕЛЬНОЙ СБОРКОЙ
+          echo "org.gradle.parallel=true" >> gradle.properties
+          echo "org.gradle.caching=true" >> gradle.properties
 
       - name: Apply Voice Changer Patch
         run: |
-          # Выжигаем DEFAULT и меняем на MIC для твоего Game Turbo
           sed -i 's/MediaRecorder\.AudioSource\.DEFAULT/MediaRecorder.AudioSource.MIC/g' TMessagesProj/src/main/java/org/telegram/messenger/MediaController.java
 
-      - name: Build APK (Afat Debug)
+      - name: Build APK (Arm64 Debug)
         run: |
           chmod +x gradlew
-          # Возвращаем рабочую сборку FAT-версии
-          ./gradlew assembleAfatDebug --stacktrace
+          # СОБИРАЕМ ТОЛЬКО ПОД ARM64, А НЕ ПОД ВСЁ ПОДРЯД
+          ./gradlew assembleAarm64Debug --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: Telegram-Patched-APK
-          path: TMessagesProj/build/outputs/apk/**/debug/*.apk
+          path: "**/build/outputs/apk/**/*.apk"
