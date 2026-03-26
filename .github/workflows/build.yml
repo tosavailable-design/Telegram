@@ -18,7 +18,7 @@ jobs:
         with:
           java-version: '17'
           distribution: 'zulu'
-          # Кэш всё еще включен, вторая сборка будет быстрее
+          # КЭШ ОСТАВЛЯЕМ! Без него будешь каждый раз ждать по 40 минут.
           cache: 'gradle'
 
       - name: Setup Dummy Files & Speedup Gradle
@@ -48,7 +48,7 @@ jobs:
           echo "RELEASE_KEY_ALIAS=dummy" >> local.properties
           echo "RELEASE_STORE_PASSWORD=dummy" >> local.properties
           
-          # УСКОРЯЕМ GRADLE ПАРАЛЛЕЛЬНОЙ СБОРКОЙ
+          # УСКОРЯЕМ GRADLE ПАРАЛЛЕЛЬНОЙ СБОРКОЙ И КЭШИРОВАНИЕМ
           echo "org.gradle.parallel=true" >> gradle.properties
           echo "org.gradle.caching=true" >> gradle.properties
 
@@ -56,11 +56,11 @@ jobs:
         run: |
           sed -i 's/MediaRecorder\.AudioSource\.DEFAULT/MediaRecorder.AudioSource.MIC/g' TMessagesProj/src/main/java/org/telegram/messenger/MediaController.java
 
-      - name: Build APK (Arm64 Debug)
+      - name: Build APK (Afat Debug - ARM64 ONLY)
         run: |
           chmod +x gradlew
-          # ИСПРАВЛЕННАЯ ТАСКА, БЕЗ ЛИШНЕЙ БУКВЫ "A"
-          ./gradlew assembleArm64Debug --stacktrace
+          # ВОТ ОНА, МАГИЯ: Возвращаем afat, но инжектим фильтр ABI ТОЛЬКО для arm64!
+          ./gradlew assembleAfatDebug -Pandroid.injected.build.abi=arm64-v8a --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
